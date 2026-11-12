@@ -1,7 +1,6 @@
 # Strands Decider — 에이전트용 소형 결정 모델 (System One)
 
-> 조사일: 2026-11-11 (업데이트: 2026-11-12, Amazon 사례 + E4B SageMaker/EC2 배포 검토) · 출처: [strands-labs/strands-decider](https://github.com/strands-labs/strands-decider) (Apache 2.0)  
-> 관련 노트: [[Jev — TypeSafe System One Model]]
+> [strands-labs/strands-decider](https://github.com/strands-labs/strands-decider) (Apache 2.0)  
 
 ## 목차
 
@@ -418,7 +417,6 @@ IaC: CDK (Beta → Gamma → Prod)
 ## 직접 확인하지 못한 부분
 
 - AWS 공식 문서(docs.aws.amazon.com)를 검색했지만 Strands Decider 항목은 찾지 못했습니다. 이 노트는 GitHub README, 배포 가이드, 예제 문서를 기준으로 작성했습니다.
-- (2026-11-11 기준) 공식 발표 블로그 글은 찾지 못했습니다. 이후 2026-11-09자 Strands Agents 블로그의 Amazon 사례 글을 확인해 [Amazon 사례](#amazon-사례--sonnet-46을-decider로-교체-98-절감) 섹션에 반영했습니다.
 - `strands-labs`는 정식 SDK 조직인 `strands-agents`와 별개인 Labs 조직입니다. 그래서 GA 제품이라기보다 실험적이고 연구 성격이 강한 프로젝트로 보입니다(작성자 해석).
 - 성능 수치는 모두 저장소에서 스스로 측정한 값입니다.
 - 한국어 입력 성능은 문서에 따로 나와 있지 않아 직접 평가가 필요합니다.
