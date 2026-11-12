@@ -1,4 +1,4 @@
-# strands-decider-kr
+# Strands Decider
 
 AWS SageMaker에 **Strands Decider E4B (Gemma 4)** 를 배포하고, 한국어 테스트 케이스로 호출하는 프로젝트입니다.
 
