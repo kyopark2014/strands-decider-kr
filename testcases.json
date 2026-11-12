@@ -1,0 +1,191 @@
+{
+  "version": 1,
+  "description": "strands-decider System One API 한국어 예제 (noul / choice / score)",
+  "cases": [
+    {
+      "name": "01_noul_urgency",
+      "description": "고객 메시지가 긴급한지 yes/no (README noul 예제)",
+      "request": {
+        "state": "도와주세요! 정산금 지급이 3일째 계속 실패하고 있어요!",
+        "questions": {
+          "is_urgent": {
+            "type": "noul",
+            "instructions": "이 메시지에 긴급함이 느껴지나요?"
+          }
+        }
+      }
+    },
+    {
+      "name": "02_choice_team_routing",
+      "description": "티켓을 어느 팀이 처리할지 선택 (README choice 예제)",
+      "request": {
+        "state": "도와주세요! 정산금 지급이 3일째 계속 실패하고 있어요!",
+        "questions": {
+          "team": {
+            "type": "choice",
+            "instructions": "어느 팀이 이 문제를 처리해야 하나요?",
+            "criteria": {
+              "결제": "결제, 정산, 청구서, 환불 관련 문제",
+              "영업": "가격, 업그레이드, 구매 문의",
+              "리테일": "매장 방문 또는 상품 재고 문의"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "03_score_frustration",
+      "description": "작성자 좌절 정도를 순서 척도로 평가 (README score 예제)",
+      "request": {
+        "state": "도와주세요! 정산금 지급이 3일째 계속 실패하고 있어요!",
+        "questions": {
+          "frustration": {
+            "type": "score",
+            "instructions": "작성자가 얼마나 좌절하고 있나요?",
+            "criteria": ["차분함", "좌절함", "절망적임"]
+          }
+        }
+      }
+    },
+    {
+      "name": "04_multi_question_support_ticket",
+      "description": "한 state에 noul+choice+score를 한 번에 (README multi 예제)",
+      "request": {
+        "state": "도와주세요! 정산금 지급이 3일째 계속 실패하고 있어요!",
+        "questions": {
+          "is_urgent": {
+            "type": "noul",
+            "instructions": "이 메시지에 긴급함이 느껴지나요?"
+          },
+          "team": {
+            "type": "choice",
+            "instructions": "어느 팀이 이 문제를 처리해야 하나요?",
+            "criteria": {
+              "결제": null,
+              "영업": null,
+              "리테일": null
+            }
+          },
+          "frustration": {
+            "type": "score",
+            "instructions": "작성자가 얼마나 좌절하고 있나요?",
+            "criteria": ["차분함", "좌절함", "절망적임"]
+          }
+        }
+      }
+    },
+    {
+      "name": "05_choice_language_detect",
+      "description": "짧은 문구의 언어 분류",
+      "request": {
+        "state": "sihamba ngokushesha",
+        "questions": {
+          "language": {
+            "type": "choice",
+            "instructions": "이 문구는 어떤 언어인가요?",
+            "criteria": {
+              "영어": null,
+              "줄루어": null,
+              "네덜란드어": null
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "06_noul_factual_check",
+      "description": "단순 사실 확인 yes/no",
+      "request": {
+        "state": "단어: strawberry",
+        "questions": {
+          "has_three_rs": {
+            "type": "noul",
+            "instructions": "strawberry라는 단어에 알파벳 r이 세 개 있나요?"
+          }
+        }
+      }
+    },
+    {
+      "name": "07_score_sentiment",
+      "description": "문서/리뷰 긍정성 점수",
+      "request": {
+        "state": "지금까지 읽은 문서 중 최고입니다. 명확하고 완전하며 실용적이에요.",
+        "questions": {
+          "positivity": {
+            "type": "score",
+            "instructions": "이 텍스트는 얼마나 긍정적인가요?",
+            "criteria": [
+              "매우 부정적",
+              "부정적",
+              "중립적",
+              "긍정적",
+              "매우 긍정적"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "08_choice_tool_gate",
+      "description": "에이전트가 어떤 툴을 호출할지 게이트",
+      "request": {
+        "state": "사용자: 구독을 해지하고 남은 기간분 환불해 주세요.\n사용 가능한 도구: 문서검색, 환불생성, 티켓오픈, 이메일발송",
+        "questions": {
+          "next_tool": {
+            "type": "choice",
+            "instructions": "에이전트가 다음에 호출해야 할 도구는 무엇인가요?",
+            "criteria": {
+              "문서검색": "정책이나 사용 방법을 찾아볼 때",
+              "환불생성": "환불을 발행하거나 결제를 취소할 때",
+              "티켓오픈": "사람 상담원에게 에스컬레이션할 때",
+              "이메일발송": "결제 변경 없이 알림만 보낼 때"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "09_noul_needs_human",
+      "description": "자동 처리 vs 사람 에스컬레이션 여부",
+      "request": {
+        "state": "고객이 계정이 해킹당했고 돈이 사라졌다고 하며, 오늘 해결되지 않으면 법적 조치를 취하겠다고 위협합니다.",
+        "questions": {
+          "needs_human": {
+            "type": "noul",
+            "instructions": "이 건을 즉시 사람 상담원에게 에스컬레이션해야 하나요?",
+            "criteria": {
+              "true": "사기, 법적 위협, 계정 탈취 위험이 있는 경우",
+              "false": "일반적인 결제 문의나 사용 방법 문의인 경우"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "10_score_answer_quality",
+      "description": "에이전트 답변 품질을 순서 척도로 채점",
+      "request": {
+        "state": {
+          "question": "비밀번호를 어떻게 재설정하나요?",
+          "answer": "설정 > 보안 > 비밀번호 재설정로 이동한 뒤 이메일을 입력하고, 보내드린 링크를 따라가면 됩니다."
+        },
+        "questions": {
+          "quality": {
+            "type": "score",
+            "instructions": "이 답변이 사용자 질문에 얼마나 적절한가요?",
+            "criteria": [
+              "틀리거나 해로움",
+              "불완전함",
+              "수용 가능함",
+              "명확하고 완전함"
+            ]
+          },
+          "is_actionable": {
+            "type": "noul",
+            "instructions": "답변이 사용자가 따라 할 수 있는 구체적인 단계를 제시하나요?"
+          }
+        }
+      }
+    }
+  ]
+}
