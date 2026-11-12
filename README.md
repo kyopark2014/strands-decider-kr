@@ -532,3 +532,6 @@ python uninstaller.py --yes
 - DLC: https://aws.github.io/deep-learning-containers/strands-decider/  
 - 모델 (E4B): https://huggingface.co/StrandsAgents/strands-decider-E4B-gemma4-v1-2610  
 - Amazon 사례 블로그: https://strandsagents.com/blog/amazon-saves-millions-replacing-sonnet-with-strands-decider/  
+- Decision Model 8종 성능 비교: Jev, Kev, Liquid d1 중 무엇을 선택해야 할까?: https://www.arizekorea.com/insights/post/decision-model-benchmark-jev-kev-liquid-d1-2LXJin4juMAAhxr
+- strands-labs / strands-decider: https://github.com/strands-labs/strands-decider
+- guardrail-bench — 한국어 금융권 컨텐츠 필터링 가드 벤치마크: https://github.com/hsr87/korean-guardrail-bench
