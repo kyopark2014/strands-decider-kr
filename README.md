@@ -29,6 +29,7 @@ Upstream: [strands-labs/strands-decider](https://github.com/strands-labs/strands
 - [삭제 (uninstaller.py)](#삭제-uninstallerpy)
 - [config.json](#configjson)
 - [질문 유형 (API)](#질문-유형-api)
+- [비용](#비용)
 - [운영 팁](#운영-팁)
 - [빠른 시작 체크리스트](#빠른-시작-체크리스트)
 - [Reference](#reference)
@@ -441,12 +442,67 @@ resp = runtime.invoke_endpoint(
 print(json.loads(resp["Body"].read()))
 ```
 
+## 비용
+
+현재 배포 기준(온디맨드 공시가):
+
+| 항목 | 값 |
+| --- | --- |
+| 리전 | `us-west-2` |
+| 인스턴스 | `ml.g5.xlarge` × **1** (Real-time Hosting) |
+| 단가 | **$1.408 / instance-hour** |
+| 과금 방식 | Endpoint가 `InService`인 **매 시간** (요청 0건이어도 동일) |
+
+단가는 AWS Price List API (`AmazonSageMaker`, `ml.g5.xlarge-Hosting`, US West Oregon) 조회값이며, us-east-1과 동일합니다.
+
+### 월 비용 예측 (compute)
+
+| 시나리오 | 계산 | 예상 비용 |
+| --- | --- | --- |
+| **24/7 상시 가동 (권장 월 추정)** | `$1.408 × 24 × 30` | **약 $1,014 / 월** |
+| 평균 월 730시간 | `$1.408 × 730` | **약 $1,028 / 월** |
+| 업무시간만 8h×22일 | `$1.408 × 176` | 약 **$248 / 월** (수동 on/off 또는 스케줄 삭제 가정) |
+| 실험 1주일 24/7 | `$1.408 × 24 × 7` | 약 **$237 / 주** |
+| 하루만 켜 둠 | `$1.408 × 24` | 약 **$33.8 / 일** |
+
+> Real-time Endpoint는 **scale-to-zero가 기본이 아닙니다.** `installer.py`로 올린 뒤 방치하면 위 **~$1,014–1,028/월**이 그대로 청구됩니다. 실험이 끝나면 `python uninstaller.py --yes`로 삭제하세요.
+
+### 부가 비용 (상대적으로 작음)
+
+| 항목 | 예상 |
+| --- | --- |
+| S3 모델 artifact (E4B + base, 대략 수십 GB) | Standard 기준 대략 **수 달러/월** 이하 |
+| CloudWatch Logs | 테스트·짧은 보관이면 **$1 미만** 수준 |
+| 데이터 전송 (같은 리전 Invoke) | 보통 무시 가능 |
+| CodeBuild (배포 1회) | 모델 sync 시 일회성, 월 고정비 아님 |
+
+**실무적으로 월 예산의 거의 전부 SageMaker Hosting 인스턴스 시간**입니다.
+
+### 처리량 관점 (참고)
+
+Amazon 사례·실측 기준 서버 단건 ~100–640 ms대입니다. 대략 **요청당 150 ms**, concurrency 1이면 이론상 인스턴스당 시간당 ~24,000건 수준입니다.
+
+| 가정 | 인스턴스 시간당 비용 | 요청당 단가 (대략) |
+| --- | --- | --- |
+| 풀가동 ~20,000 req/h | $1.408 | **~$0.00007 / 요청** |
+| 여유 두고 ~5,600 req/h (블로그) | $1.408 | **~$0.00025 / 요청** |
+| 거의 idle (시간당 10건) | $1.408 | **~$0.14 / 요청** |
+
+트래픽이 낮을수록 요청당 단가가 급등하므로, **상시 API가 아니면 끄고 쓰는 것**이 비용 효율의 핵심입니다.
+
+### 절감 팁
+
+1. 사용 후 즉시 `uninstaller.py`로 스택 삭제  
+2. 필요 시에만 `installer.py`로 다시 배포 (콜드 기동 수~십수 분)  
+3. 장기 상시라면 Savings Plans / 더 저렴한 `ml.g6.xlarge`(L4) 검토 — 다만 본 프로젝트 기본·검증은 `ml.g5.xlarge`  
+4. 오토스케일 min=0 구성은 Real-time에서 제약이 크므로, 이 스택에서는 **삭제 = 과금 중단**으로 보는 것이 단순합니다
+
 ## 운영 팁
 
 - **동시성**: DLC 기본 `DECIDER_MAX_CONCURRENCY=1` 유지 권장 (버스트 시 OOM 방지).  
 - **JSON 키 순서**: 비교·회귀 테스트 시 `sort_keys=True`.  
 - **용량 부족**: CDK context `fallback_instance_types` (예: `ml.g6e.xlarge,ml.g6.xlarge`) — 필요 시 `installer`/`cdk_context`에 추가.  
-- **비용**: Amazon 사례 기준 E4B on `ml.g5.xlarge`는 티켓당 비용이 Sonnet 대비 약 **98% 절감** 수준으로 보고됨. 유휴 삭제가 중요.  
+- **비용**: 자세한 월 추정은 [비용](#비용). 유휴 엔드포인트가 가장 큰 낭비이므로 미사용 시 삭제.  
 - **로그**:
 
 ```bash
