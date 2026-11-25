@@ -166,14 +166,10 @@ const FETCH_DEPENDENCIES = ["@huggingface/hub", "tsx"].map(
   (name) => `${name}@${(PACKAGE.devDependencies[name] as string).replace(/^[\^~]/, "")}`,
 );
 
-// The build uploads this directory to S3; keep only what the image needs, as
-// Dockerfile.dockerignore does for a plain docker build.
+// The build uploads this directory to S3; keep only what the image needs.
+// This project installs strands-decider from PyPI in Dockerfile (no local src/).
 const ASSET_EXCLUDE = [
   "*",
-  "!pyproject.toml",
-  "!README.md",
-  "!LICENSE",
-  "!src/",
   "!deploy/sagemaker/Dockerfile",
   "**/__pycache__",
   "**/*.egg-info",

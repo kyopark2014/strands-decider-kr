@@ -1,8 +1,9 @@
 # Strands Decider
 
-AWS SageMaker에 **Strands Decider E4B (Gemma 4)** 를 배포하고, 한국어 테스트 케이스로 호출하는 프로젝트입니다.
+AWS SageMaker에 **Strands Decider E4B Gemma 4 v2** 를 배포하고, 한국어 테스트 케이스로 호출하는 프로젝트입니다.
 
 Upstream: [strands-labs/strands-decider](https://github.com/strands-labs/strands-decider) (Apache 2.0)  
+v2 발표: [Introducing Strands Decider v2](https://strandsagents.com/blog/introducing-strands-decider-v2/)  
 배경 사례: [Amazon saves millions by replacing Sonnet with Strands Decider](https://strandsagents.com/blog/amazon-saves-millions-replacing-sonnet-with-strands-decider/)
 
 ## 목차
@@ -38,7 +39,8 @@ Upstream: [strands-labs/strands-decider](https://github.com/strands-labs/strands
 
 | 항목 | 내용 |
 | --- | --- |
-| 모델 | `StrandsAgents/strands-decider-E4B-gemma4-v1-2610` |
+| 모델 | `StrandsAgents/strands-decider-E4B-gemma4-v2-2611` |
+| 서빙 이미지 | CDK `image=build` (PyPI `strands-decider==0.4.0`; DLC는 v2 미지원) |
 | 배포 | SageMaker Real-time Endpoint (`deploy/sagemaker` CDK) |
 | 기본 인스턴스 | `ml.g5.xlarge` (A10G 24GB, CUDA) |
 | 리전 기본값 | `us-west-2` |
@@ -66,7 +68,7 @@ flowchart LR
     S3["S3<br/>모델 + base weights"]
     CB["CodeBuild<br/>HF → S3 sync"]
     SM["SageMaker Endpoint<br/>ml.g5.xlarge"]
-    DLC["DLC Image<br/>strands-decider:serve-sagemaker-cuda-v1"]
+    DLC["ECR Image<br/>Dockerfile + strands-decider 0.4.0"]
     CW["CloudWatch Logs"]
   end
 
@@ -166,7 +168,7 @@ CDK bootstrap은 `installer.py`가 리전별로 없을 때 자동 실행합니�
 
 | 키 | 기본값 |
 | --- | --- |
-| `model.hub_id` | `StrandsAgents/strands-decider-E4B-gemma4-v1-2610` |
+| `model.hub_id` | `StrandsAgents/strands-decider-E4B-gemma4-v2-2611` |
 | `sagemaker.instance_type` | `ml.g5.xlarge` |
 | `sagemaker.instance_count` | `1` |
 | `region` | AWS 세션 리전, 없으면 `us-west-2` |
@@ -179,7 +181,7 @@ python installer.py
 # 옵션
 python installer.py --region us-west-2
 python installer.py --instance-type ml.g5.xlarge
-python installer.py --model StrandsAgents/strands-decider-E4B-gemma4-v1-2610
+python installer.py --model StrandsAgents/strands-decider-E4B-gemma4-v2-2611
 python installer.py --skip-smoke
 ```
 
@@ -198,7 +200,7 @@ python installer.py --skip-smoke
 
 ```bash
 aws sagemaker describe-endpoint \
-  --endpoint-name strands-decider-e4b-gemma4-v1-2610 \
+  --endpoint-name strands-decider-e4b-gemma4-v2-2611 \
   --region us-west-2 \
   --query EndpointStatus
 # InService
@@ -227,7 +229,7 @@ JSON은 기본적으로 **`sort_keys=True`** 로 직렬화합니다. (키 순서
 출력 예:
 
 ```text
-endpoint=strands-decider-e4b-gemma4-v1-2610  region=us-west-2  instance=ml.g5.xlarge
+endpoint=strands-decider-e4b-gemma4-v2-2611  region=us-west-2  instance=ml.g5.xlarge
 ---- is_urgent (noul) ----
 instructions: 이 메시지에 긴급함이 느껴지나요?
 result: noul=0.9560  → 예(true) 쪽
@@ -275,8 +277,8 @@ result: noul=0.9560  → 예(true) 쪽
 
 ## 실행 결과
 
-아래는 SageMaker Endpoint (`strands-decider-E4B-gemma4-v1-2610`, `ml.g5.xlarge`)에 대해  
-`python run_strands_devider.py` 로 10개 케이스를 돌린 결과입니다.
+아래는 SageMaker Endpoint (`strands-decider-E4B-gemma4-v2-2611`, `ml.g5.xlarge`, 커스텀 이미지 `strands-decider==0.4.0`)에 대해  
+`python run_strands_devider.py` 로 10개 케이스를 돌린 **v2 실측** 결과입니다.
 
 ### 유형 설명
 
@@ -292,51 +294,54 @@ result: noul=0.9560  → 예(true) 쪽
 
 | # | 유형 | 시나리오 | 결과 | 서버 latency |
 | --- | --- | --- | --- | --- |
-| 01 | noul — 긴급성 (README) | 정산 3일 실패 | **noul=0.956** → 예 | 105.6 ms |
-| 02 | choice — 팀 라우팅 (README) | 동일 티켓 | **결제** (0.996, conf 0.994) | 104.3 ms |
-| 03 | score — 좌절도 (README) | 동일 티켓 | **score≈1.19 ≈ 좌절함** (calm/frustrated/depressed) | 104.9 ms |
-| 04 | multi — noul+choice+score | 한 요청에 3질문 | 긴급 0.957 / **결제** / 좌절≈1.19 | 220.1 ms |
-| 05 | choice — 언어 감지 | `sihamba ngokushesha` | **줄루어** (0.975, conf 0.963) | 102.7 ms |
-| 06 | noul — strawberry r 개수 | `strawberry`에 r이 3개? | **noul=0.457** → 아니오 쪽 | 102.9 ms |
-| 07 | score — 긍정성 | 극찬 리뷰 | **score≈3.61 ≈ 매우 긍정적** (0~4) | 103.3 ms |
-| 08 | choice — 툴 게이트 | 구독 해지·환불 | **환불생성** (0.990, conf 0.986) | 104.0 ms |
-| 09 | noul — 사람 에스컬레이션 | 해킹·법적 위협 | **noul=0.9997** → 예 | 103.5 ms |
-| 10 | score+noul — 답변 품질 | 비밀번호 재설정 Q&A | score≈2.29 ≈ 수용 가능 / **actionable 0.966** | 221.7 ms |
+| 01 | noul — 긴급성 | 정산 3일 실패 | **noul=0.9965** → 예 | 73.7 ms |
+| 02 | choice — 팀 라우팅 | 동일 티켓 | **결제** (1.000, conf 1.000) | 73.8 ms |
+| 03 | score — 좌절도 | 동일 티켓 | **score≈1.01 ≈ 좌절함** (conf 0.852) | 77.4 ms |
+| 04 | multi — noul+choice+score | 한 요청에 3질문 | 긴급 0.997 / **결제** / 좌절≈1.01 | 136.6 ms |
+| 05 | choice — 언어 감지 | `sihamba ngokushesha` | **줄루어** (0.978, conf 0.966) | 73.8 ms |
+| 06 | noul — strawberry r 개수 | `strawberry`에 r이 3개? | **noul=0.558** → 예 쪽 | 73.7 ms |
+| 07 | score — 긍정성 | 극찬 리뷰 | **score≈3.999 ≈ 매우 긍정적** (conf 0.982) | 72.9 ms |
+| 08 | choice — 툴 게이트 | 구독 해지·환불 | **환불생성** (0.890, conf 0.854) | 74.7 ms |
+| 09 | noul — 사람 에스컬레이션 | 해킹·법적 위협 | **noul=0.9978** → 예 | 75.3 ms |
+| 10 | score+noul — 답변 품질 | 비밀번호 재설정 Q&A | score≈2.36 ≈ 수용 가능 / **actionable 0.964** | 137.7 ms |
 
 ### 결과 분석
 
-**잘 맞는 케이스 (에이전트·티켓 워크플로에 바로 쓰기 좋음)**
+**v1 → v2에서 눈에 띄는 변화**
 
-- **01 긴급성 / 02 팀 라우팅 / 03 좌절도**: README와 같은 지원 티켓 시나리오에서 E4B가 기대대로 동작합니다. 긴급성·결제팀·좌절 쪽이 모두 선명합니다.
-- **04 multi**: 질문 3개를 한 번에 보내도 개별 결과와 거의 같고, 서버 지연은 ~220 ms로 단일 질문(~105 ms)의 약 2배 수준입니다. state를 한 번만 읽는 이점이 보입니다.
-- **05 언어 감지**: 줄루어를 confidence 0.96으로 고름 — 짧은 분류에 강합니다.
-- **08 툴 게이트**: `환불생성` 0.99 — 에이전트 `before_tool_call` 게이트에 적합합니다.
-- **09 에스컬레이션**: **0.9997** — 사기/법적 위협 기준이 criteria에 있을 때 매우 확신 있게 “사람 필요”로 갑니다.
+- **01 긴급성**: 0.956 → **0.997** (더 확신).
+- **06 strawberry**: v1은 **0.457(아니오 쪽, 오답)** 이었는데 v2는 **0.558(예 쪽, 정답 방향)**. 여전히 애매하니 문자 세기에는 폴백을 유지하세요.
+- **07 긍정성**: ≈3.61 → **≈3.999** (거의 만점, conf 0.98).
+- **서버 latency**: 단건 ~103 ms → **~73–77 ms**.
+
+**잘 맞는 케이스**
+
+- **01 / 02 / 03 / 09**: 티켓 triage·에스컬레이션에 바로 쓰기 좋습니다.
+- **04 multi**: 3질문 ~137 ms — state 1회 인코딩 이점이 유지됩니다.
+- **05 / 08**: 언어·툴 게이트도 기대 방향.
 
 **해석에 주의할 케이스**
 
-- **06 strawberry r 개수**: 정답은 **예(r이 3개)** 인데 모델은 **0.457 → 아니오 쪽**입니다. 문자 단위 세기·철자 퍼즐은 decision model의 약한 영역으로, confidence 임계값이나 LLM/규칙 폴백이 필요합니다.
-- **10 답변 품질**: `명확하고 완전함`(0.483)과 `수용 가능함`(0.359)에 질량이 갈라져 score≈2.29, confidence 0.57입니다. 반면 **is_actionable=0.97**은 단계가 있다는 점은 잘 잡습니다. 품질 score만으로 자동 승인하기보다 confidence·noul을 함께 보는 편이 안전합니다.
-- **07 긍정성**: 매우 긍정적(0.762)으로 기대와 일치합니다.
+- **06**: 정답 방향이지만 confidence가 낮습니다. 규칙/LLM 폴백 권장.
+- **10**: score 질량이 `명확하고 완전함`(0.535)과 `수용 가능함`(0.302)에 갈라져 conf 0.48. **is_actionable**과 함께 보세요.
 
 **지연시간**
 
 | 지표 | 값 |
 | --- | --- |
-| 총 (클라이언트) | 약 **3.1 s** / 10건 |
-| 평균 (클라이언트) | **~309 ms** |
-| 서버 단건 | 대개 **~103–106 ms** |
-| 서버 multi(3질문) | **~220 ms** |
-| 첫 요청 | 클라이언트 ~593 ms (웜업/연결 포함 가능) |
-
-E4B on `ml.g5.xlarge`에서 한국어 케이스도 서버 단건 **약 100 ms대**로, Amazon 사례(~640 ms, 당시 측정 조건)보다 짧은 편입니다. 클라이언트 시간은 네트워크 RTT가 포함됩니다.
+| 총 (클라이언트) | 약 **2.7 s** / 10건 |
+| 평균 (클라이언트) | **~272 ms** |
+| 서버 단건 | 대개 **~73–77 ms** |
+| 서버 multi(3질문) | **~137 ms** |
+| 첫 요청 | 클라이언트 ~576 ms (웜업/연결 포함 가능) |
 
 **실무 권장**
 
-1. 라우팅·툴 게이트·에스컬레이션처럼 **닫힌 선택지**는 confidence ≥ 0.9일 때 자동 적용.  
-2. 문자 세기·열린 추론은 Decider만으로  determin하지 말고 폴백.  
+1. 라우팅·툴 게이트·에스컬레이션은 confidence ≥ 0.9일 때 자동 적용.  
+2. 문자 세기·열린 추론은 Decider만으로 결정하지 말고 폴백.  
 3. 티켓 triage는 **04 multi**처럼 한 요청에 묶어 RTT를 절약.  
-4. JSON은 `sort_keys=True`로 보내 회귀 비교를 안정화.
+4. JSON은 `sort_keys=True`로 보내 회귀 비교를 안정화.  
+5. **배포 이미지**: 공식 DLC는 아직 v1 config만 로드하므로, 이 프로젝트는 `-c image=build`(PyPI `strands-decider==0.4.0`)를 기본으로 씁니다.
 
 ## 로컬 서버 테스트 (선택)
 
@@ -344,7 +349,7 @@ E4B on `ml.g5.xlarge`에서 한국어 케이스도 서버 단건 **약 100 ms대
 
 ```bash
 # 별도 터미널
-strands-decider serve StrandsAgents/strands-decider-E4B-gemma4-v1-2610 --port 8000
+strands-decider serve StrandsAgents/strands-decider-E4B-gemma4-v2-2611 --port 8000
 
 python test_systemone_examples.py --base-url http://localhost:8000
 python test_systemone_examples.py --cases ./testcases.json --only 1,2 --list
@@ -361,14 +366,14 @@ python uninstaller.py --yes    # 확인 없이 삭제
 
 # 배포 때와 동일한 모델/인스턴스를 명시할 수도 있음
 python uninstaller.py \
-  --model StrandsAgents/strands-decider-E4B-gemma4-v1-2610 \
+  --model StrandsAgents/strands-decider-E4B-gemma4-v2-2611 \
   --instance-type ml.g5.xlarge \
   --yes
 ```
 
 삭제 후:
 
-- CloudFormation 스택 `strands-decider-e4b-gemma4-v1-2610` 제거  
+- CloudFormation 스택 `strands-decider-e4b-gemma4-v2-2611` 제거  
 - Endpoint / EndpointConfig / Model / S3 모델 버킷 등 스택 리소스 삭제  
 - `config.json`의 `endpoint_arn`, `invoke_url`, `smoke_test` 등 제거, `endpoint_status=Deleted`  
 
@@ -386,13 +391,13 @@ python uninstaller.py \
   "account_id": "262976740991",
   "region": "us-west-2",
   "model": {
-    "hub_id": "StrandsAgents/strands-decider-E4B-gemma4-v1-2610",
+    "hub_id": "StrandsAgents/strands-decider-E4B-gemma4-v2-2611",
     "revision": "main",
-    "served_name": "strands-decider-E4B-gemma4-v1-2610"
+    "served_name": "strands-decider-E4B-gemma4-v2-2611"
   },
   "sagemaker": {
-    "stack_name": "strands-decider-e4b-gemma4-v1-2610",
-    "endpoint_name": "strands-decider-e4b-gemma4-v1-2610",
+    "stack_name": "strands-decider-e4b-gemma4-v2-2611",
+    "endpoint_name": "strands-decider-e4b-gemma4-v2-2611",
     "endpoint_arn": "arn:aws:sagemaker:us-west-2:...:endpoint/...",
     "instance_type": "ml.g5.xlarge",
     "instance_count": 1,
@@ -435,7 +440,7 @@ body = {
     },
 }
 resp = runtime.invoke_endpoint(
-    EndpointName="strands-decider-e4b-gemma4-v1-2610",
+    EndpointName="strands-decider-e4b-gemma4-v2-2611",
     ContentType="application/json",
     Body=json.dumps(body, ensure_ascii=False, sort_keys=True).encode("utf-8"),
 )
@@ -506,7 +511,7 @@ Amazon 사례·실측 기준 서버 단건 ~100–640 ms대입니다. 대략 **�
 - **로그**:
 
 ```bash
-aws logs tail /aws/sagemaker/Endpoints/strands-decider-e4b-gemma4-v1-2610 \
+aws logs tail /aws/sagemaker/Endpoints/strands-decider-e4b-gemma4-v2-2611 \
   --region us-west-2 --since 1h --follow
 ```
 
@@ -530,7 +535,8 @@ python uninstaller.py --yes
 - Upstream: https://github.com/strands-labs/strands-decider  
 - SageMaker 배포 가이드: https://github.com/strands-labs/strands-decider/tree/main/deploy/sagemaker  
 - DLC: https://aws.github.io/deep-learning-containers/strands-decider/  
-- 모델 (E4B): https://huggingface.co/StrandsAgents/strands-decider-E4B-gemma4-v1-2610  
+- 모델 (E4B v2): https://huggingface.co/StrandsAgents/strands-decider-E4B-gemma4-v2-2611  
+- Decider v2 블로그: https://strandsagents.com/blog/introducing-strands-decider-v2/  
 - Amazon 사례 블로그: https://strandsagents.com/blog/amazon-saves-millions-replacing-sonnet-with-strands-decider/  
 - Decision Model 8종 성능 비교: Jev, Kev, Liquid d1 중 무엇을 선택해야 할까?: https://www.arizekorea.com/insights/post/decision-model-benchmark-jev-kev-liquid-d1-2LXJin4juMAAhxr
 - strands-labs / strands-decider: https://github.com/strands-labs/strands-decider

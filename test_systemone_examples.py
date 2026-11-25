@@ -4,7 +4,7 @@
 테스트 케이스는 testcases.json 의 cases 를 사용합니다.
 
 로컬 서버가 떠 있어야 합니다:
-  strands-decider serve StrandsAgents/strands-decider-2B-qwen3.5-v1-2610 --port 8000
+  strands-decider serve StrandsAgents/strands-decider-E4B-gemma4-v2-2611 --port 8000
 
 실행:
   python test_systemone_examples.py
@@ -172,7 +172,7 @@ def run_examples(
         print("먼저 서버를 실행하세요:")
         print(
             "  strands-decider serve "
-            "StrandsAgents/strands-decider-2B-qwen3.5-v1-2610 --port 8000"
+            "StrandsAgents/strands-decider-E4B-gemma4-v2-2611 --port 8000"
         )
         return 1
 

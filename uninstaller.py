@@ -7,7 +7,7 @@ sagemaker 배포 필드를 정리합니다.
 실행:
   python uninstaller.py
   python uninstaller.py --yes
-  python uninstaller.py --model StrandsAgents/strands-decider-E4B-gemma4-v1-2610
+  python uninstaller.py --model StrandsAgents/strands-decider-E4B-gemma4-v2-2611
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 CONFIG_PATH = SCRIPT_DIR / "config.json"
 CDK_DIR = SCRIPT_DIR / "deploy" / "sagemaker"
 
-DEFAULT_MODEL = "StrandsAgents/strands-decider-E4B-gemma4-v1-2610"
+DEFAULT_MODEL = "StrandsAgents/strands-decider-E4B-gemma4-v2-2611"
 DEFAULT_INSTANCE_TYPE = "ml.g5.xlarge"
 DEFAULT_REGION = "us-west-2"
 DEFAULT_REVISION = "main"

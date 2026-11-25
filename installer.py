@@ -5,14 +5,14 @@ deploy/sagemaker CDK로 strands-decider 모델을 배포하고,
 결과를 config.json에 저장합니다.
 
 기본값 (config에 없으면):
-  model.hub_id      = StrandsAgents/strands-decider-E4B-gemma4-v1-2610
+  model.hub_id      = StrandsAgents/strands-decider-E4B-gemma4-v2-2611
   instance_type     = ml.g5.xlarge
   region            = AWS 세션 기본 리전 (없으면 us-west-2)
 
 실행:
   python installer.py
   python installer.py --instance-type ml.g5.xlarge
-  python installer.py --model StrandsAgents/strands-decider-E4B-gemma4-v1-2610
+  python installer.py --model StrandsAgents/strands-decider-E4B-gemma4-v2-2611
 """
 
 from __future__ import annotations
@@ -35,11 +35,14 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 CONFIG_PATH = SCRIPT_DIR / "config.json"
 CDK_DIR = SCRIPT_DIR / "deploy" / "sagemaker"
 
-DEFAULT_MODEL = "StrandsAgents/strands-decider-E4B-gemma4-v1-2610"
+DEFAULT_MODEL = "StrandsAgents/strands-decider-E4B-gemma4-v2-2611"
 DEFAULT_INSTANCE_TYPE = "ml.g5.xlarge"
 DEFAULT_REGION = "us-west-2"
 DEFAULT_REVISION = "main"
 DEFAULT_DLC_TAG = "serve-sagemaker-cuda-v1"
+# Published DLC still expects v1 strands_decider_config.json; v2 needs image=build
+# (Dockerfile installs strands-decider>=0.4 from PyPI).
+DEFAULT_IMAGE = "build"
 
 
 def log(msg: str) -> None:
@@ -141,6 +144,7 @@ def ensure_defaults(config: dict[str, Any], args: argparse.Namespace) -> dict[st
                     "model_revision": revision,
                     "instance_type": instance_type,
                     "instance_count": instance_count,
+                    "image": cdk.get("image") or DEFAULT_IMAGE,
                     "dlc_image_tag": cdk.get("dlc_image_tag") or DEFAULT_DLC_TAG,
                 },
             },
@@ -200,6 +204,8 @@ def cdk_context_args(config: dict[str, Any]) -> list[str]:
         "-c", f"instance_type={cdk['instance_type']}",
         "-c", f"instance_count={cdk.get('instance_count', 1)}",
     ]
+    if cdk.get("image"):
+        args.extend(["-c", f"image={cdk['image']}"])
     if cdk.get("dlc_image_tag"):
         args.extend(["-c", f"dlc_image_tag={cdk['dlc_image_tag']}"])
     if cdk.get("fallback_instance_types"):
